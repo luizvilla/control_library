@@ -79,7 +79,19 @@ struct PidParams {
 class Pid: public Controller <float32_t, float32_t, float32_t, PidParams> {
 
 public:
-    Pid(){};
+    Pid()
+        : _integral(0.0),
+          _Kp(0.0),
+          _Ti(0.0),
+          _Td(0.0),
+          _N(0.0),
+          _previous_f_deriv(0.0),
+          _previous_error(0.0),
+          _inverse_Ts(0.0),
+          _inverse_Ti(0.0),
+          _inverse_Kp(0.0),
+          _b1_filter(0.0),
+          _a1_filter(0.0) {};
 
     /**
      * @brief initialize the standard pid
@@ -95,7 +107,30 @@ public:
 
     void reset(float32_t output);
 
+    float32_t getTs() const;
+    int8_t setTs(float32_t value);
+
+    float32_t getKp() const;
+    int8_t setKp(float32_t value);
+
+    float32_t getTi() const;
+    int8_t setTi(float32_t value);
+
+    float32_t getTd() const;
+    int8_t setTd(float32_t value);
+
+    float32_t getN() const;
+    int8_t setN(float32_t value);
+
+    float32_t getLowerBound() const;
+    int8_t setLowerBound(float32_t value);
+
+    float32_t getUpperBound() const;
+    int8_t setUpperBound(float32_t value);
+
 private:
+    int8_t setDerivativeParams(float32_t Td, float32_t N);
+
     float32_t _integral;
     float32_t _Kp;
     float32_t _Ti;
