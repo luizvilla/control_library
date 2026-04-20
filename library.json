@@ -27,6 +27,12 @@
           "email": "ayoub.farah-hassan@laas.fr"
       }
     ],
+    "build":
+    {
+        "srcDir": "src",
+        "srcFilter": ["+<*>"]
+        
+    },
     "export" : 
     {
         "exclude": ["test*"]
