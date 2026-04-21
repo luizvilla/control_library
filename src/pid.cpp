@@ -28,43 +28,44 @@
 
 LOG_MODULE_DECLARE(ot_control);
 
-int8_t Pid::setDerivativeParams(float32_t Td, float32_t N) {
-    float32_t tau = 0.0;
+int8_t Pid::init(PidParams p) {
 
-    if (N != 0.0) {
-        tau = Td / N;
+    if (p.Ts <= 0.0) {
+        LOG_ERR("Ts should be > 0");
+        return -EINVAL;
     }
+    _Ts = p.Ts;
+    _inverse_Ts = 1.0 / p.Ts;
 
+    if (p.Kp == 0.0)
+    {
+        LOG_ERR("Kp equal To 0");
+        return -EINVAL;
+    }
+    _Kp = p.Kp;
+    _inverse_Kp = 1.0 / p.Kp;
+
+    if ( p.Ti == 0.0 ) {
+        LOG_ERR("Ti can not be equal to 0.0\n");
+        return -EINVAL;
+    } 
+    _Ti = p.Ti;
+    _inverse_Ti = 1.0 / p.Ti;
+
+    _Td = p.Td;
+
+    float32_t tau;
+    if (p.N == 0.0)
+        tau = 0.0;
+    else
+        tau = _Td / p.N;
     if (tau < 0.0) {
         LOG_ERR("Td/N should be > 0");
         return -EINVAL;
     }
-
-    _Td = Td;
-    _N = N;
-    _b1_filter = _Ts / (_Ts + tau);
-    _a1_filter = -tau / (_Ts + tau);
-
-    return 0;
-}
-
-int8_t Pid::init(PidParams p) {
-
-    if (setTs(p.Ts) != 0) {
-        return -EINVAL;
-    }
-
-    if (setKp(p.Kp) != 0) {
-        return -EINVAL;
-    }
-
-    if (setTi(p.Ti) != 0) {
-        return -EINVAL;
-    }
-
-    if (setDerivativeParams(p.Td, p.N) != 0) {
-        return -EINVAL;
-    }
+    _N = p.N;
+    _b1_filter = _Ts / (_Ts + tau );
+    _a1_filter = - tau / (_Ts + tau); 
 
     if (p.lower_bound > p.upper_bound) {
         LOG_ERR("lower bound > upper_bound");
@@ -124,92 +125,40 @@ void Pid::reset(float32_t output=0.0) {
     _previous_error = 0.0;
 }
 
-float32_t Pid::getTs() const {
-    return _Ts;
-}
-
-int8_t Pid::setTs(float32_t value) {
-    if (value <= 0.0) {
-        LOG_ERR("Ts should be > 0");
-        return -EINVAL;
+void Pid::setKp(float32_t Kp) {
+    if (Kp <= 0.0F) {
+        return;
     }
 
-    _Ts = value;
-    _inverse_Ts = 1.0 / value;
+    _Kp = Kp;
+    _inverse_Kp = 1.0F / Kp;
+}
 
-    return setDerivativeParams(_Td, _N);
+void Pid::setTi(float32_t Ti) {
+    if (Ti <= 0.0F) {
+        return;
+    }
+
+    _Ti = Ti;
+    _inverse_Ti = 1.0F / Ti;
+}
+
+void Pid::setKi(float32_t Ki) {
+    if (Ki <= 0.0F) {
+        return;
+    }
+
+    setTi(_Kp / Ki);
 }
 
 float32_t Pid::getKp() const {
     return _Kp;
 }
 
-int8_t Pid::setKp(float32_t value) {
-    if (value == 0.0) {
-        LOG_ERR("Kp equal To 0");
-        return -EINVAL;
-    }
-
-    _Kp = value;
-    _inverse_Kp = 1.0 / value;
-    return 0;
-}
-
 float32_t Pid::getTi() const {
     return _Ti;
 }
 
-int8_t Pid::setTi(float32_t value) {
-    if (value == 0.0) {
-        LOG_ERR("Ti can not be equal to 0.0\n");
-        return -EINVAL;
-    }
-
-    _Ti = value;
-    _inverse_Ti = 1.0 / value;
-    return 0;
-}
-
-float32_t Pid::getTd() const {
-    return _Td;
-}
-
-int8_t Pid::setTd(float32_t value) {
-    return setDerivativeParams(value, _N);
-}
-
-float32_t Pid::getN() const {
-    return _N;
-}
-
-int8_t Pid::setN(float32_t value) {
-    return setDerivativeParams(_Td, value);
-}
-
-float32_t Pid::getLowerBound() const {
-    return _lower_bound;
-}
-
-int8_t Pid::setLowerBound(float32_t value) {
-    if (value > _upper_bound) {
-        LOG_ERR("lower bound > upper_bound");
-        return -EINVAL;
-    }
-
-    _lower_bound = value;
-    return 0;
-}
-
-float32_t Pid::getUpperBound() const {
-    return _upper_bound;
-}
-
-int8_t Pid::setUpperBound(float32_t value) {
-    if (value < _lower_bound) {
-        LOG_ERR("lower bound > upper_bound");
-        return -EINVAL;
-    }
-
-    _upper_bound = value;
-    return 0;
+float32_t Pid::getKi() const {
+    return _Kp * _inverse_Ti;
 }
